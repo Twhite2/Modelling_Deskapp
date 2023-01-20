@@ -1,14 +1,15 @@
+#include <iostream>
 #include <cmath>
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <math.h>
 
 
 const double GRAVITY = 9.81; // gravitational acceleration in m/s^2
 const double PI = 3.14159265358979323846;
 const double R = 8.3144598;
 const double M_PI = 3.14159265358979323846;
-
 
 
 // Calculates various oil pipe hydraulics using the Miller equation and MIT equation.
@@ -283,6 +284,163 @@ std::string flowType(double flowRate, double pipeDiameter, double viscosity) {
     }
 }
 
+// Properties of Flowing Liquids
+
+// Gravity and Molecular Weight
+// Liquid unit measurement in kg/m^3
+void fluidGravityMoleWeight(double density, double molecular_mass, double& specific_gravity, double& molecular_weight, double water_density) {
+    specific_gravity = density / water_density;
+    molecular_weight = molecular_mass / (1.0e-3);
+}
+
+//calculates the bubble point pressure of a liquid using the Peng-Robinson equation of state
+double calcBubblePointPressure(double temperature, double acentricFactor, double criticalPressure, double criticalTemperature, double P, double T) {
+    double Tr = temperature / criticalTemperature;
+    double omega = acentricFactor;
+    double a = (0.45724 * pow(R*criticalTemperature, 2) / criticalPressure) * (1 + (0.37464 + 1.54226 * omega - 0.26992 * pow(omega, 2)) * (1 - sqrt(Tr)));
+    double b = 0.0778 * R * criticalTemperature / criticalPressure;
+    double A = a * P / pow(R*T, 2);
+    double B = b * P / (R*T);
+    double Z = 1 + B - sqrt(pow(B, 2) - 4 * A);
+    double bubblePointPressure = P * Z;
+    return bubblePointPressure;
+}
+
+// Calculates Bubble Point oil formation volume factor
+double calcBubblePointFVF(double pressure, double temperature, double Rs) {
+    double A = 1.092 + (5.047E-5 * Rs) - (5.75E-9 * pow(Rs, 2));
+    double B = 5.2E-5 + (2.4E-9 * Rs);
+    double FVF = A + (B * (pressure - 14.7));
+    return FVF;
+}
+
+// Calculates for Isothermal compressibility
+double calcIsothermalCompressibility(double pressure, double Rs) {
+    double A = 1.6E-5 + (9.2E-9 * Rs);
+    double B = -1.2E-11 * Rs;
+    double isothermal_compressibility = A + (B * pressure);
+    return isothermal_compressibility;
+}
+
+// Calculates for Undersatured oil formation volume factor
+double calcUndersaturatedFVF(double pressure, double Rs, double Rsi) {
+    double A = 1 + (Rs * (1.25E-5 + (5E-9 * Rsi)));
+    double B = 5.9E-5 * Rs;
+    double C = -1.2E-9 * pow(Rs, 2);
+    double FVF = A + (B * pressure) + (C * pow(pressure, 2));
+    return FVF;
+}
+
+// Calculates for Oil density
+double calcOilDensity(double api_gravity) {
+    double density = 141.5 / (api_gravity + 131.5);
+    return density;
+}
+
+// Calculates Dead oil viscosity
+double calcDeadOilViscosity(double temperature, double pressure, double Rsi) {
+    double A = pow(10, (1.7667 + 0.0601*(Rsi) - 0.0261*(pow(Rsi, 2))));
+    double B = pow(10, (-11.513 - 0.744*(Rsi) + 0.139*(pow(Rsi, 2))));
+    double viscosity = A * exp(B * pressure);
+    return viscosity;
+}
+
+//Calculates Bubble Point Oil Viscosity
+double calcBubblePointViscosity(double pressure, double temperature, double Rs) {
+    double A = 1.4E-5 + (1.0E-9 * Rs);
+    double B = -9.0E-13 * Rs;
+    double viscosity = A + (B * pressure);
+    return viscosity;
+}
+
+// Calculates for Undersaturated Oil Viscosity
+double calcUndersaturatedViscosity(double pressure, double temperature, double Rs, double Rsi) {
+    double A = 1 + (Rs * (1.25E-5 + (5E-9 * Rsi)));
+    double B = 5.9E-5 * Rs;
+    double C = -1.2E-9 * pow(Rs, 2);
+    double viscosity = A + (B * pressure) + (C * pow(pressure, 2));
+    return viscosity;
+}
+
+// Calculates Gas/Oil interfacial tension
+double calcGasOilIFT(double oil_density, double gas_density, double oil_viscosity, double gas_viscosity, double temperature) {
+    double J = (oil_density - gas_density) / (oil_density + gas_density);
+    double IFT = (3.14 * oil_viscosity * gas_viscosity) / (2 * sqrt(oil_viscosity * gas_viscosity) * log(1 + (J * J)));
+    return IFT;
+}
+
+// Calculates Water/oil interfacial tension
+double calcWaterOilIFT(double surface_tension_oil, double surface_tension_water, double density_oil, double density_water) {
+    double IFT = (surface_tension_oil - surface_tension_water) / (density_oil - density_water);
+    return IFT;
+}
+
+//  calculates the size of a centrifugal pump for a pipeline system
+double calcPumpSize(double flow_rate, double head_required, double specific_gravity) {
+    double BEP_flow = flow_rate / pow((specific_gravity * head_required), 0.75);
+    double pump_size = pow(BEP_flow, 1.0/3.0) * pow((specific_gravity * head_required), 0.25);
+    // std::cout << "Pump size: " << pump_size << " cubic meters per second" << std::endl;
+    return pump_size;
+}
+
+// Calculates for Heater
+double calcHeaterSize(double flow_rate, double inlet_temp, double outlet_temp, double specific_heat) {
+    double delta_temp = outlet_temp - inlet_temp;
+    double heat_load = flow_rate * specific_heat * delta_temp;
+    // std::cout << "Heater size: " << heat_load << " watts" << std::endl;
+    return heat_load;
+}
+
+// Calculates for Coolers
+double calcCoolerSize(double flow_rate, double inlet_temp, double outlet_temp, double specific_heat) {
+    double delta_temp = inlet_temp - outlet_temp;
+    double heat_removal = flow_rate * specific_heat * delta_temp;
+    // std::cout << "Cooler size: " << heat_removal << " watts" << std::endl;
+    return heat_removal;
+}
+
+// Calculates for heat exchangers
+double calcHeatExchangerSize(double flow_rate, double inlet_temp, double outlet_temp, double specific_heat) {
+    double delta_temp = abs(inlet_temp - outlet_temp);
+    double heat_load = flow_rate * specific_heat * delta_temp;
+    // cout << "Heat exchanger size: " << heat_load << " watts" << endl;
+    return heat_load;
+}
+
+// Calculates for Mixers
+double calcMixerEfficiency(double flow_rate, double mixer_size) {
+    double mixer_efficiency = flow_rate / mixer_size;
+    // std::cout << "Mixer size: " << mixer_size << " cubic meters per second" << std::endl;
+    return mixer_efficiency;
+}
+
+// Calculates pipe couplings
+double calcCouplingSize(double pipe_diameter, double pipe_wall_thickness) {
+    double coupling_size = pipe_diameter + 2 * pipe_wall_thickness;
+    // std::cout << "Coupling size: " << coupling_size << " meters" << std::endl;
+    return coupling_size;
+}
+
+// Properties of Pipeline Fluids
+
+//Calculation for density
+double calcFluidDensity(double mass, double volume) {
+    double density = mass / volume;
+    return density;
+}
+
+// Calculation for viscosity
+double calcFluidViscosity(double shear_stress, double shear_rate) {
+    double viscosity = shear_stress / shear_rate;
+    return viscosity;
+}
+
+// Calculation for fluid surface tension
+double calcFluidSurfaceTension(double force, double length) {
+    double surface_tension = force / length;
+    return surface_tension;
+}
+
 
 
 // Calculates the kinetic energy of fluid flow in a pipe with diameter d and flow rate Q in m^3/s.
@@ -310,11 +468,26 @@ void temperature_profile(double L, double t, double T_out, double (*T_in)(double
   }
 }
 
+// Calculates for Pipeline Insulation
+double calcInsulationThickness(double pipe_diameter, double pipe_length, double ambient_temp, double fluid_temp, double thermal_conductivity, double insulation_coefficient) {
+    double Q = 2 * M_PI * pipe_length * (fluid_temp - ambient_temp) / (log(pipe_diameter / (pipe_diameter - 2 * insulation_coefficient)));
+    double insulation_thickness = Q / (2 * M_PI * thermal_conductivity * (fluid_temp - ambient_temp));
+    return insulation_thickness;
+}
+
+// Calculates for Fluid Compressibility
+double calcFluidCompressibility(double fluid_density, double bulk_modulus) {
+    double compressibility = 1 / bulk_modulus;
+    return compressibility;
+}
+
 // Calculates the fluid density for a given temperature and pressure using the ideal gas law.
 // The temperature is given in degrees Celsius, and the pressure is given in Pa.
 double density_ideal_gas(double T, double p, double m, double R) {
 return p / (R * (T + 273.15));
 }
+
+
 
 // Calculates the fluid viscosity for a given temperature using the Sutherland's law.
 // The temperature is given in degrees Celsius.
@@ -357,6 +530,7 @@ double bernoulli_model(double v, double b) {
 return b * v * v / 2;
 }
 
+
 // Calculates the conservation of mass for a fluid with density rho, flow rate Q, and area A.
 double conservation_of_mass(double rho, double Q, double A) {
 return rho * Q / A;
@@ -366,6 +540,14 @@ return rho * Q / A;
 double conservation_of_momentum(double F, double rho, double Q) {
 return F - rho * Q;
 }
+
+// Calculates Equation of state for an ideal gas
+double calcIdealGasEquation(double pressure, double temperature, double molar_mass, double molar_volume) {
+    double universalGasConstant = 8.314; // in J/mol·K
+    double idealGasEquation = pressure * molar_volume - (universalGasConstant * temperature) / molar_mass;
+    return idealGasEquation;
+}
+
 
 // Calculates the pressure p and temperature T in degrees Celsius for a fluid using the Peng-Robinson's equation of state.
 void peng_robinson(double rho, double T, double p, double &new_rho, double &new_T, double &new_p) {
