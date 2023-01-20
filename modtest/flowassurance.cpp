@@ -57,7 +57,7 @@ bool calcHydrateFormation(double temperature, double pressure, double gas_compos
 }
 
 // Calculates for Pipeline Slug Analysis
-void calcPipelineSlugAnalysis(double flow_rate, double pressure, double pipeline_diameter, double liquid_density, double liquid_velocity_critical, double pressure_drop) {
+double calcPipelineSlugAnalysis(double flow_rate, double pressure, double pipeline_diameter, double liquid_density, double liquid_velocity_critical, double pressure_drop) {
     // Slug flow frequency and magnitude calculation based on the flow rate, pressure, pipeline diameter and liquid density
     double slug_frequency = 0;
     double slug_magnitude = 0;
@@ -67,8 +67,9 @@ void calcPipelineSlugAnalysis(double flow_rate, double pressure, double pipeline
         slug_frequency = 1;
         slug_magnitude = pressure_drop / liquid_density;
     }
-    std::cout << "Slug flow frequency: " << slug_frequency << std::endl;
-    std::cout << "Slug flow magnitude: " << slug_magnitude << std::endl;
+    // std::cout << "Slug flow frequency: " << slug_frequency << std::endl;
+    // std::cout << "Slug flow magnitude: " << slug_magnitude << std::endl;
+    return slug_magnitude;
 }
 
 // Get Wax Appearance
