@@ -18,13 +18,6 @@ double calculatePayoutTime(double initialCost, double annualRevenue, double disc
 }
 
 
-// double vectorToDouble(std::vector<double> cashFlows) {
-//     double cashFlow = 0;
-//     for (int i = 0; i < cashFlows.size(); i++) {
-//         cashFlow += cashFlows[i];
-//     }
-//     return cashFlow;
-// }
 
 double calculateIRR(std::vector<double> cashFlows, double initialCost) {
     double irr = 0.1;
